@@ -3,6 +3,12 @@ import type { FormData } from "./types"
 import { ScreenShell, Card, Logo, Button, InputField, BackButton, ClockIcon } from "../../shared/ui"
 import { EXAMPLE_GROUPS, PENDING_STEPS } from "./data"
 
+function errorMessage(cause: unknown, fallback: string): string {
+  if (cause instanceof Error) return cause.message
+  if (cause && typeof cause === "object" && "message" in cause && typeof cause.message === "string") return cause.message
+  return fallback
+}
+
 export function WelcomeScreen({ onStart }: { onStart: () => void }) {
   return (
     <ScreenShell>
@@ -40,17 +46,21 @@ export function TellNameScreen({ firstName, lastName, setFirstName, setLastName,
   lastName: string
   setFirstName: (value: string) => void
   setLastName: (value: string) => void
-  onContinue: () => void
+  onContinue: () => void | Promise<void>
 }) {
   const [error, setError] = useState("")
 
-  function continueToApp() {
+  async function continueToApp() {
     if (!firstName.trim() || !lastName.trim()) {
       setError("Please enter your first and last name.")
       return
     }
     setError("")
-    onContinue()
+    try {
+      await onContinue()
+    } catch (cause) {
+      setError(errorMessage(cause, "Could not save your profile. Please try again."))
+    }
   }
 
   return (
@@ -73,20 +83,23 @@ export function TellNameScreen({ firstName, lastName, setFirstName, setLastName,
 export function JoinGroupScreen({
   data, setData, onJoin, onBack,
 }: {
-  data: FormData; setData: (d: Partial<FormData>) => void; onJoin: () => void; onBack: () => void
+  data: FormData; setData: (d: Partial<FormData>) => void; onJoin: (code: string) => Promise<void>; onBack: () => void
 }) {
   const [error, setError] = useState("")
   const [pasteMode, setPasteMode] = useState(false)
   const [pasteLink, setPasteLink] = useState("")
 
-  function handleJoin() {
+  async function handleJoin() {
     const code = pasteMode
       ? (pasteLink.split("/").pop() || "").toUpperCase().trim()
       : data.groupCode.trim().toUpperCase()
     if (!code) { setError("Please enter a group code to continue."); return }
-    const groupName = EXAMPLE_GROUPS[code]
-    if (!groupName) { setError("We couldn't find a group with that code. Please check with your group leader and try again."); return }
-    setData({ groupCode: code, groupName }); setError(""); onJoin()
+    setError("")
+    try {
+      await onJoin(code)
+    } catch (cause) {
+      setError(errorMessage(cause, "Could not submit your request. Please try again."))
+    }
   }
 
   return (
@@ -137,8 +150,22 @@ export function JoinGroupScreen({
 export function PendingScreen({
   data, onBack, onApproved,
 }: {
-  data: FormData; onBack: () => void; onApproved: () => void
+  data: FormData; onBack: () => void; onApproved: () => Promise<boolean>
 }) {
+  const [checking, setChecking] = useState(false)
+  const [statusMessage, setStatusMessage] = useState("")
+  async function checkApproval() {
+    setChecking(true)
+    setStatusMessage("")
+    try {
+      if (await onApproved()) return
+      setStatusMessage("Your request is still waiting for approval.")
+    } catch (cause) {
+      setStatusMessage(errorMessage(cause, "Could not check your request."))
+    } finally {
+      setChecking(false)
+    }
+  }
   return (
     <ScreenShell>
       <div className="flex flex-col items-center gap-7 mt-6">
@@ -164,8 +191,8 @@ export function PendingScreen({
           </div>
         </div>
         <div className="w-full border-t border-[#D1D9E8] pt-5 flex flex-col gap-3">
-          <p className="text-[#94A3B8] text-[14px] text-center">(Demo only) Simulate what happens after the group leader approves you:</p>
-          <Button onClick={onApproved} variant="primary">I've Been Approved — Continue</Button>
+          {statusMessage && <p role="status" className="text-center text-[14px] text-[#64748B]">{statusMessage}</p>}
+          <Button onClick={checkApproval} variant="primary" disabled={checking}>{checking ? "Checking..." : "Check approval status"}</Button>
           <Button onClick={onBack} variant="ghost">← Start Over</Button>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { DAYS_ORDER } from "./data"
 import { Button, useSheetClose } from "../../shared/ui"
 import { slotTimeTo24h, type Slot } from "../../shared/slot"
 import { WeeklyTimetable, addDaysTo, mondayOf, type TimetableEvent } from "./timetable"
-import { getMyAssignments, type Assignment } from "../../integration/assignments"
+import type { Assignment } from "../../integration/assignments"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -291,12 +291,13 @@ function OverrideEntryCard({ entry, onEdit, onRemove }: {
 // ─── Availability Tab (Home) ──────────────────────────────────────────────────
 
 export function AvailabilityTab({
-  recurringEntries, overrides, slots, position, onPositionChange,
+  recurringEntries, overrides, assignments, slots, position, onPositionChange,
   onAddRecurring, onAddOverride, onEditRecurring, onEditOverride,
   onRemoveRecurring, onRemoveOverride, onViewSlot,
 }: {
   recurringEntries: RecurringAvail[]
   overrides: OneTimeOverride[]
+  assignments: Assignment[]
   slots: Slot[] // the ones marked "serving" (volunteered) show on the timetable
   position: TimetablePosition
   onPositionChange: (change: Partial<TimetablePosition>) => void
@@ -337,7 +338,7 @@ export function AvailabilityTab({
       </p>
 
       <WeeklyTimetable
-        events={availabilityEvents(recurringEntries, overrides, getMyAssignments(), slots, weekStart, onViewSlot)}
+        events={availabilityEvents(recurringEntries, overrides, assignments, slots, weekStart, onViewSlot)}
         weekStart={weekStart}
         legend={[{ label: "Available", color: "green" }, { label: "Not available", color: "red" }, { label: "Serving", color: "navy" }]}
         view={position.view}
@@ -432,7 +433,7 @@ export function SetRecurringScreen({ initial, onSave, onBack }: {
     if (days.length === 0) e.days = "Please select at least one day."
     if (isEndNotAfterStart(startTime, endTime)) e.time = "End time must be after start time."
     if (Object.keys(e).length) { setErrors(e); return }
-    onSave({ id: initial?.id ?? `r-${Date.now()}`, days, startTime, endTime })
+    onSave({ id: initial?.id ?? crypto.randomUUID(), days, startTime, endTime })
   }
 
   return (
@@ -505,7 +506,7 @@ export function AddOverrideScreen({ initial, onSave, onBack }: {
     if (!type) e.type = "Please choose one of the options below."
     if (type === "free" && isEndNotAfterStart(startTime, endTime)) e.time = "End time must be after start time."
     if (Object.keys(e).length) { setErrors(e); return }
-    onSave({ id: initial?.id ?? `o-${Date.now()}`, date, type: type!, startTime: type === "free" ? startTime : undefined, endTime: type === "free" ? endTime : undefined })
+    onSave({ id: initial?.id ?? crypto.randomUUID(), date, type: type!, startTime: type === "free" ? startTime : undefined, endTime: type === "free" ? endTime : undefined })
   }
 
   return (
