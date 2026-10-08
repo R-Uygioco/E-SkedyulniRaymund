@@ -72,18 +72,21 @@ function DesktopFormPanel({ children }: { children: React.ReactNode }) {
 // ─── Desktop Wizard Screens ───────────────────────────────────────────────────
 
 export function DesktopJoinGroupScreen({ data, setData, onJoin, onBack }: {
-  data: FormData; setData: (d: Partial<FormData>) => void; onJoin: () => void; onBack: () => void
+  data: FormData; setData: (d: Partial<FormData>) => void; onJoin: (code: string) => Promise<void>; onBack: () => void
 }) {
   const [error, setError] = useState("")
   const [pasteMode, setPasteMode] = useState(false)
   const [pasteLink, setPasteLink] = useState("")
 
-  function handleJoin() {
+  async function handleJoin() {
     const code = pasteMode ? (pasteLink.split("/").pop() || "").toUpperCase().trim() : data.groupCode.trim().toUpperCase()
     if (!code) { setError("Please enter a group code to continue."); return }
-    const groupName = EXAMPLE_GROUPS[code]
-    if (!groupName) { setError("We couldn't find a group with that code. Please check with your group leader and try again."); return }
-    setData({ groupCode: code, groupName }); setError(""); onJoin()
+    setError("")
+    try {
+      await onJoin(code)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not submit your request. Please try again.")
+    }
   }
 
   return (
@@ -135,8 +138,22 @@ export function DesktopJoinGroupScreen({ data, setData, onJoin, onBack }: {
 }
 
 export function DesktopPendingScreen({ data, onBack, onApproved }: {
-  data: FormData; onBack: () => void; onApproved: () => void
+  data: FormData; onBack: () => void; onApproved: () => Promise<boolean>
 }) {
+  const [checking, setChecking] = useState(false)
+  const [statusMessage, setStatusMessage] = useState("")
+  async function checkApproval() {
+    setChecking(true)
+    setStatusMessage("")
+    try {
+      if (await onApproved()) return
+      setStatusMessage("Your request is still waiting for approval.")
+    } catch (cause) {
+      setStatusMessage(cause instanceof Error ? cause.message : "Could not check your request.")
+    } finally {
+      setChecking(false)
+    }
+  }
   return (
     <div className="flex min-h-screen">
       <DesktopBrandPanel />
@@ -161,8 +178,8 @@ export function DesktopPendingScreen({ data, onBack, onApproved }: {
             </ol>
           </div>
           <div className="w-full border-t border-[#D1D9E8] pt-5 flex flex-col gap-3">
-            <p className="text-[#94A3B8] text-[14px] text-center">(Demo only) Simulate what happens after the group leader approves you:</p>
-            <Button onClick={onApproved} variant="primary">I've Been Approved — Continue</Button>
+            {statusMessage && <p role="status" className="text-center text-[14px] text-[#64748B]">{statusMessage}</p>}
+            <Button onClick={checkApproval} variant="primary" disabled={checking}>{checking ? "Checking..." : "Check approval status"}</Button>
             <Button onClick={onBack} variant="ghost">← Start Over</Button>
           </div>
         </div>

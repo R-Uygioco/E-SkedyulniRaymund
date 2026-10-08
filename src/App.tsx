@@ -16,6 +16,7 @@ import { useAvailability } from "./features/availability/useAvailability"
 // Open Slots
 import { SlotList, SlotVolunteerScreen, SlotServingScreen, SlotFilledScreen } from "./features/slots/slots"
 import { useSlots } from "./features/slots/useSlots"
+import { getMembershipStatus, requestGroupJoin, restoreMember, saveProfile } from "./integration/supabase"
 
 export default function App() {
   const isDesktop = useIsDesktop()
@@ -26,8 +27,9 @@ export default function App() {
   const [ministry, setMinistry] = useState(MINISTRIES[0])
 
   const wizard = useWizard()
-  const availability = useAvailability()
-  const slots = useSlots()
+  const approvedGroupId = wizard.form.membershipStatus === "approved" ? wizard.form.groupId : undefined
+  const availability = useAvailability(approvedGroupId)
+  const slots = useSlots(approvedGroupId)
 
   function go(to: Screen) {
     setPrevScreen(screen)
@@ -46,6 +48,27 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" })
     applyStatusBar(screen)
   }, [screen])
+
+  useEffect(() => {
+    let active = true
+    restoreMember().then(restored => {
+      if (!active || !restored) return
+      wizard.updateForm({
+        name: restored.name,
+        groupCode: restored.membership?.code ?? "",
+        groupName: restored.membership?.name ?? "",
+        groupId: restored.membership?.id,
+        membershipStatus: restored.membership?.status,
+      })
+      if (!restored.membership) {
+        setScreen("join-group")
+      } else {
+        setMinistry({ id: restored.membership.id, name: restored.membership.name, parish: "Your Ministry" })
+        setScreen(restored.membership.status === "approved" ? "home" : "pending")
+      }
+    }).catch(error => console.error("Could not restore member session:", error))
+    return () => { active = false }
+  }, [])
 
   // Android back button support (only active inside the Android app).
   const screenRef = useRef(screen)
@@ -68,8 +91,9 @@ export default function App() {
           lastName={wizard.lastName}
           setFirstName={wizard.setFirstName}
           setLastName={wizard.setLastName}
-          onContinue={() => {
+          onContinue={async () => {
             wizard.saveName()
+            await saveProfile(`${wizard.firstName} ${wizard.lastName}`.trim())
             go("join-group")
           }}
         />
@@ -79,17 +103,41 @@ export default function App() {
       // Back returns to wherever the member came from: name entry during onboarding, or Home via "+ Join Another Ministry".
       const back = () => go(prevScreen)
       return isDesktop ? (
-        <DesktopJoinGroupScreen data={wizard.form} setData={wizard.updateForm} onJoin={() => go("pending")} onBack={back} />
+        <DesktopJoinGroupScreen data={wizard.form} setData={wizard.updateForm} onJoin={async code => {
+          const membership = await requestGroupJoin(code)
+          wizard.updateForm({ groupCode: membership.code, groupName: membership.name, groupId: membership.id, membershipStatus: membership.status })
+          go("pending")
+        }} onBack={back} />
       ) : (
-        <JoinGroupScreen data={wizard.form} setData={wizard.updateForm} onJoin={() => go("pending")} onBack={back} />
+        <JoinGroupScreen data={wizard.form} setData={wizard.updateForm} onJoin={async code => {
+          const membership = await requestGroupJoin(code)
+          wizard.updateForm({ groupCode: membership.code, groupName: membership.name, groupId: membership.id, membershipStatus: membership.status })
+          go("pending")
+        }} onBack={back} />
       )
     }
 
     case "pending":
       return isDesktop ? (
-        <DesktopPendingScreen data={wizard.form} onBack={reset} onApproved={() => go("home")} />
+        <DesktopPendingScreen data={wizard.form} onBack={reset} onApproved={async () => {
+          const status = wizard.form.groupId ? await getMembershipStatus(wizard.form.groupId) : "approved"
+          wizard.updateForm({ membershipStatus: status })
+          if (status === "rejected") throw new Error("Your request was not approved. Please contact the group leader.")
+          if (status !== "approved") return false
+          setMinistry({ id: wizard.form.groupId ?? "demo", name: wizard.form.groupName, parish: "Your Ministry" })
+          go("home")
+          return true
+        }} />
       ) : (
-        <PendingScreen data={wizard.form} onBack={reset} onApproved={() => go("home")} />
+        <PendingScreen data={wizard.form} onBack={reset} onApproved={async () => {
+          const status = wizard.form.groupId ? await getMembershipStatus(wizard.form.groupId) : "approved"
+          wizard.updateForm({ membershipStatus: status })
+          if (status === "rejected") throw new Error("Your request was not approved. Please contact the group leader.")
+          if (status !== "approved") return false
+          setMinistry({ id: wizard.form.groupId ?? "demo", name: wizard.form.groupName, parish: "Your Ministry" })
+          go("home")
+          return true
+        }} />
       )
 
     // ─── Home (holds the Availability and Open Slots tabs) ────────────────────
@@ -107,6 +155,7 @@ export default function App() {
             <AvailabilityTab
               recurringEntries={availability.recurringEntries}
               overrides={availability.overrides}
+              assignments={availability.assignments}
               slots={slots.slots}
               onViewSlot={slot => { slots.setActiveSlot(slot); go("slot-serving") }}
               position={availability.timetablePosition}
@@ -148,7 +197,7 @@ export default function App() {
       return slots.activeSlot ? (
         <SlotVolunteerScreen
           slot={slots.activeSlot}
-          onVolunteer={() => { slots.volunteer(); go("slot-serving") }}
+          onVolunteer={async () => { await slots.volunteer(); go("slot-serving") }}
           onBack={() => go("home")}
         />
       ) : null
@@ -157,7 +206,7 @@ export default function App() {
       return slots.activeSlot ? (
         <SlotServingScreen
           slot={slots.activeSlot}
-          onCancelSpot={() => { slots.cancelSpot(); go("home") }}
+          onCancelSpot={async () => { await slots.cancelSpot(); go("home") }}
           onBack={() => go("home")}
         />
       ) : null

@@ -1,3 +1,4 @@
+import { useState } from "react"
 import type { Slot, SlotStatus } from "../../shared/slot"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -98,9 +99,24 @@ export function SlotList({ slots, onSlotTap }: { slots: Slot[]; onSlotTap: (slot
 }
 
 export function SlotVolunteerScreen({ slot, onVolunteer, onBack }: {
-  slot: Slot; onVolunteer: () => void; onBack: () => void
+  slot: Slot; onVolunteer: () => void | Promise<void>; onBack: () => void
 }) {
+  const [actionError, setActionError] = useState("")
+  const [submitting, setSubmitting] = useState(false)
   const remaining = slot.totalSpots - slot.filledSpots
+  async function volunteer() {
+    setSubmitting(true)
+    setActionError("")
+    try {
+      await onVolunteer()
+    } catch (cause) {
+      setActionError(cause instanceof Error && cause.message.includes("slot_full")
+        ? "This slot just filled up. Please choose another one."
+        : cause instanceof Error ? cause.message : "Could not volunteer for this slot.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
   return (
     <div className="min-h-screen bg-white flex flex-col px-5">
       <div className="pt-12 pb-6">
@@ -128,7 +144,8 @@ export function SlotVolunteerScreen({ slot, onVolunteer, onBack }: {
         </div>
       </div>
       <div className="py-8 flex flex-col gap-4">
-        <button onClick={onVolunteer} className="w-full min-h-[56px] rounded-full bg-[#1B3A6B] text-white text-[17px] font-bold hover:bg-[#142d54] active:scale-[0.98] transition-all cursor-pointer">Volunteer for this slot</button>
+        {actionError && <p role="alert" className="text-center text-[14px] font-medium text-[#C0392B]">{actionError}</p>}
+        <button onClick={volunteer} disabled={submitting} className="w-full min-h-[56px] rounded-full bg-[#1B3A6B] text-white text-[17px] font-bold hover:bg-[#142d54] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50">{submitting ? "Saving..." : "Volunteer for this slot"}</button>
         <button onClick={onBack} className="w-full min-h-[48px] text-[#64748B] text-[16px] font-medium hover:text-[#1B3A6B] transition-colors cursor-pointer">Cancel</button>
       </div>
     </div>
@@ -136,8 +153,21 @@ export function SlotVolunteerScreen({ slot, onVolunteer, onBack }: {
 }
 
 export function SlotServingScreen({ slot, onCancelSpot, onBack }: {
-  slot: Slot; onCancelSpot: () => void; onBack: () => void
+  slot: Slot; onCancelSpot: () => void | Promise<void>; onBack: () => void
 }) {
+  const [actionError, setActionError] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  async function cancelSpot() {
+    setSubmitting(true)
+    setActionError("")
+    try {
+      await onCancelSpot()
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : "Could not cancel this spot.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
   return (
     <div className="min-h-screen bg-white flex flex-col px-5">
       <div className="pt-12 pb-6">
@@ -178,7 +208,8 @@ export function SlotServingScreen({ slot, onCancelSpot, onBack }: {
             <p className="text-[#C9921A] text-[14px] leading-snug">This is coming up soon — cancelling this late may need your group leader's attention.</p>
           </div>
         )}
-        <button onClick={onCancelSpot} className="w-full min-h-[56px] rounded-full bg-white border-2 border-[#1B3A6B] text-[#1B3A6B] text-[17px] font-bold hover:bg-[#F4F6FB] active:scale-[0.98] transition-all cursor-pointer">Cancel my spot</button>
+        {actionError && <p role="alert" className="text-center text-[14px] font-medium text-[#C0392B]">{actionError}</p>}
+        <button onClick={cancelSpot} disabled={submitting} className="w-full min-h-[56px] rounded-full bg-white border-2 border-[#1B3A6B] text-[#1B3A6B] text-[17px] font-bold hover:bg-[#F4F6FB] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50">{submitting ? "Saving..." : "Cancel my spot"}</button>
       </div>
     </div>
   )
