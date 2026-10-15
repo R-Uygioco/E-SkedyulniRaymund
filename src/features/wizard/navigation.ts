@@ -7,5 +7,5 @@ export const WIZARD_BACK_TARGETS: Record<WizardScreen, BackTarget<WizardScreen>>
   welcome: "exit",
   "tell-name": "welcome",
   "join-group": "previous",
-  pending: "welcome",
+  pending: "previous",
 }
