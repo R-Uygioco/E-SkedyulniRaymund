@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { UserProfileSheet } from "../features/auth/UserProfileSheet"
 import { Button, useSheetClose } from "./ui"
 
 export type HomeTab = "availability" | "slots"
@@ -39,7 +40,7 @@ function MinistrySheet({ selected, onSelect, onClose, onJoin }: {
               key={ministry.id}
               disabled={ministry.waiting}
               onClick={() => close(() => onSelect(ministry))}
-              className="flex min-h-[72px] w-full items-center justify-between gap-3 py-3 text-left disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex min-h-[72px] w-full items-center justify-between gap-3 py-3 text-left disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
             >
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -66,16 +67,29 @@ function greeting() {
   return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"
 }
 
-export function HomeScreen({ userName, ministry, onMinistryChange, tab, onTabChange, onJoin, children }: {
+export function HomeScreen({
+  userName,
+  ministry,
+  onMinistryChange,
+  tab,
+  onTabChange,
+  onJoin,
+  onSignOut,
+  onOpenAdmin,
+  children,
+}: {
   userName: string
   ministry: Ministry
   onMinistryChange: (ministry: Ministry) => void
   tab: HomeTab
   onTabChange: (tab: HomeTab) => void
   onJoin: () => void
+  onSignOut?: () => void
+  onOpenAdmin?: () => void
   children: React.ReactNode // the open tab's content
 }) {
   const [showMinistries, setShowMinistries] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
   // The Availability tab holds the weekly timetable, so it gets the wide layout.
   const wide = tab === "availability"
 
@@ -84,15 +98,30 @@ export function HomeScreen({ userName, ministry, onMinistryChange, tab, onTabCha
     setShowMinistries(false)
   }
 
+  const initial = userName.trim().charAt(0).toUpperCase() || "M"
+
   return (
     <div className="min-h-screen bg-[#F4F6FB]" style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom))" }}>
       <div className="bg-[#1B3A6B] px-4 pb-5 text-white" style={{ paddingTop: "calc(2.5rem + env(safe-area-inset-top))" }}>
         <div className={`mx-auto ${wide ? "max-w-6xl" : "max-w-3xl"}`}>
-          <div className="mb-4">
-            <p className="text-[16px] text-white/70">{greeting()}, {userName.split(" ")[0]}</p>
-            <p className="text-xl font-bold">E-Skedyul</p>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-[16px] text-white/70">{greeting()}, {userName.split(" ")[0]}</p>
+              <p className="text-xl font-bold">E-Skedyul</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowProfile(true)}
+              className="flex items-center gap-2 rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 transition-colors cursor-pointer border border-white/20 active:scale-95"
+              aria-label="Account Profile and Settings"
+            >
+              <div className="w-7 h-7 rounded-full bg-[#C9921A] text-white flex items-center justify-center font-extrabold text-xs">
+                {initial}
+              </div>
+              <span className="text-xs font-semibold text-white/90">Profile</span>
+            </button>
           </div>
-          <button onClick={() => setShowMinistries(true)} className="flex min-h-[64px] w-full items-center justify-between rounded-2xl bg-white px-5 text-left text-[#1B3A6B] shadow-sm">
+          <button onClick={() => setShowMinistries(true)} className="flex min-h-[64px] w-full items-center justify-between rounded-2xl bg-white px-5 text-left text-[#1B3A6B] shadow-sm cursor-pointer">
             <div>
               <p className="text-[14px] font-semibold text-[#64748B]">Current ministry</p>
               <p className="text-xl font-extrabold">{ministry.name} ▾</p>
@@ -110,7 +139,7 @@ export function HomeScreen({ userName, ministry, onMinistryChange, tab, onTabCha
           ["availability", "Availability"],
           ["slots", "Open Slots"],
         ] as Array<[HomeTab, string]>).map(([value, label]) => (
-          <button key={value} onClick={() => onTabChange(value)} className={`min-h-[52px] rounded-2xl px-2 text-[15px] font-bold transition-all duration-200 ${tab === value ? "bg-[#1B3A6B]/10 text-[#1B3A6B] ring-1 ring-[#1B3A6B]/15 shadow-sm" : "text-[#64748B] hover:bg-white/50"}`}>
+          <button key={value} onClick={() => onTabChange(value)} className={`min-h-[52px] rounded-2xl px-2 text-[15px] font-bold transition-all duration-200 cursor-pointer ${tab === value ? "bg-[#1B3A6B]/10 text-[#1B3A6B] ring-1 ring-[#1B3A6B]/15 shadow-sm" : "text-[#64748B] hover:bg-white/50"}`}>
             {label}
           </button>
         ))}
@@ -122,6 +151,17 @@ export function HomeScreen({ userName, ministry, onMinistryChange, tab, onTabCha
           onClose={() => setShowMinistries(false)}
           onSelect={switchMinistry}
           onJoin={onJoin}
+        />
+      )}
+
+      {showProfile && (
+        <UserProfileSheet
+          onClose={() => setShowProfile(false)}
+          onSignOut={() => {
+            setShowProfile(false)
+            onSignOut?.()
+          }}
+          onOpenAdmin={onOpenAdmin}
         />
       )}
     </div>

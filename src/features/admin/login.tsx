@@ -1,54 +1,123 @@
 import { useState } from "react"
-import { BackButton, Button, Card, InputField, Logo, ScreenShell } from "../../shared/ui"
+import {
+  BackButton,
+  Button,
+  Card,
+  InputField,
+  Logo,
+  ScreenShell,
+} from "../../shared/ui"
+import { useAuth } from "../auth/useAuth"
 
-const ADMIN_USERNAME = "admin"
-const ADMIN_PASSWORD = "admin123"
+const DEMO_ADMIN_USER = "admin"
+const DEMO_ADMIN_PASS = "admin123"
 
-export function AdminLoginScreen({ onBack, onAuthenticated }: {
+export function AdminLoginScreen({
+  onBack,
+  onAuthenticated,
+}: {
   onBack: () => void
   onAuthenticated: () => void
 }) {
-  const [username, setUsername] = useState("")
+  const { signIn, signInAsDemo, isConfigured } = useAuth()
+  const [emailOrUser, setEmailOrUser] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  function signIn() {
-    if (!username.trim() || !password) {
-      setError("Enter your username and password.")
+  async function handleSignIn(e?: React.FormEvent) {
+    if (e) e.preventDefault()
+    const identifier = emailOrUser.trim()
+
+    if (!identifier || !password) {
+      setError("Enter your admin username/email and password.")
       return
     }
-    if (username.trim() !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
-      setError("The username or password is incorrect.")
-      return
-    }
+
+    setLoading(true)
     setError("")
+
+    // Try hardcoded demo admin credentials first (only if Supabase is not configured)
+    if (
+      !isConfigured &&
+      identifier.toLowerCase() === DEMO_ADMIN_USER &&
+      password === DEMO_ADMIN_PASS
+    ) {
+      signInAsDemo("admin")
+      setLoading(false)
+      onAuthenticated()
+      return
+    }
+
+    // Try Supabase auth
+    if (isConfigured) {
+      const res = await signIn(identifier, password)
+      setLoading(false)
+      if (res.ok) {
+        if (res.isAdmin) {
+          onAuthenticated()
+        } else {
+          setError("This account does not have administrator privileges.")
+        }
+      } else {
+        setError(res.error || "The username or password is incorrect.")
+      }
+      return
+    }
+
+    setLoading(false)
+    setError("The username or password is incorrect.")
+  }
+
+  function handleDemoAdmin() {
+    setEmailOrUser(DEMO_ADMIN_USER)
+    setPassword(DEMO_ADMIN_PASS)
+    signInAsDemo("admin")
     onAuthenticated()
   }
 
   return (
     <ScreenShell>
       <BackButton onClick={onBack} />
-      <div className="mb-7 flex justify-center">
+
+      <div className="mb-6 flex flex-col items-center">
         <Logo size="md" />
+        <div className="mt-3 flex items-center gap-2">
+          <span
+            className={`inline-block w-2.5 h-2.5 rounded-full ${
+              isConfigured ? "bg-[#2D7A4F]" : "bg-[#C9921A]"
+            }`}
+          />
+          <span className="text-xs font-semibold text-[#64748B]">
+            {isConfigured ? "Server Live (Supabase Connected)" : "Demo Mode"}
+          </span>
+        </div>
       </div>
+
       <Card>
-        <div className="border-b border-border pb-5">
-          <p className="text-xs font-bold uppercase tracking-widest text-gold">Administration</p>
-          <p className="mt-2 text-2xl font-bold text-navy">Admin sign in</p>
-          <p className="mt-2 text-base leading-relaxed text-muted">
-            Sign in with your administrator account to manage organizations and events.
+        <div className="border-b border-[#D1D9E8] pb-5">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#C9921A]">
+            Administration
+          </p>
+          <p className="mt-2 text-2xl font-bold text-[#1B3A6B]">
+            Admin sign in
+          </p>
+          <p className="mt-2 text-base leading-relaxed text-[#64748B]">
+            Sign in with your administrator account or Supabase credentials to
+            manage organizations and events.
           </p>
         </div>
-        <div className="mt-6 flex flex-col gap-5">
+
+        <form onSubmit={handleSignIn} className="mt-6 flex flex-col gap-5">
           <InputField
             id="admin-username"
-            label="Username"
-            value={username}
-            onChange={value => {
-              setUsername(value)
+            label="Email or Username"
+            value={emailOrUser}
+            onChange={(value) => {
+              setEmailOrUser(value)
               setError("")
             }}
-            placeholder="Enter username"
+            placeholder="admin@parish.ph or admin"
             autoComplete="username"
           />
           <InputField
@@ -56,23 +125,47 @@ export function AdminLoginScreen({ onBack, onAuthenticated }: {
             label="Password"
             type="password"
             value={password}
-            onChange={value => {
+            onChange={(value) => {
               setPassword(value)
               setError("")
             }}
             placeholder="Enter password"
             autoComplete="current-password"
           />
+
           {error && (
-            <p role="alert" className="rounded-xl bg-red-light p-4 text-sm font-semibold text-red">
+            <p
+              role="alert"
+              className="rounded-xl bg-[#FDEDEC] p-4 text-sm font-semibold text-[#C0392B]"
+            >
               {error}
             </p>
           )}
-          <Button onClick={signIn}>Sign in to admin</Button>
-        </div>
+
+          <Button type="submit" disabled={loading}>
+            {loading ? "Authenticating..." : "Sign in to admin"}
+          </Button>
+
+          {!isConfigured && (
+            <div className="p-3 bg-[#EFF6FF] border border-[#2563EB]/20 rounded-xl">
+              <p className="text-xs text-[#2563EB] font-bold mb-1.5">
+                Demo Admin Shortcut:
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                size="compact"
+                onClick={handleDemoAdmin}
+              >
+                Use Demo Credentials (admin / admin123)
+              </Button>
+            </div>
+          )}
+        </form>
       </Card>
-      <p className="mt-5 text-center text-sm leading-relaxed text-muted">
-        This workspace is restricted to authorized administrators.
+
+      <p className="mt-5 text-center text-sm leading-relaxed text-[#64748B]">
+        This workspace is restricted to authorized parish administrators.
       </p>
     </ScreenShell>
   )
