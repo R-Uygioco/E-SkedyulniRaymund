@@ -3,7 +3,15 @@ import type { FormData } from "./types"
 import { ScreenShell, Card, Logo, Button, InputField, BackButton, ClockIcon } from "../../shared/ui"
 import { EXAMPLE_GROUPS, PENDING_STEPS } from "./data"
 
-export function WelcomeScreen({ onStart, onAdmin }: { onStart: () => void; onAdmin: () => void }) {
+export function WelcomeScreen({
+  onStart,
+  onSignIn,
+  onAdmin,
+}: {
+  onStart: () => void
+  onSignIn: () => void
+  onAdmin: () => void
+}) {
   return (
     <ScreenShell>
       <div className="mt-16 flex flex-col items-center gap-10">
@@ -27,8 +35,9 @@ export function WelcomeScreen({ onStart, onAdmin }: { onStart: () => void; onAdm
           <p className="text-xl font-semibold leading-relaxed text-[#1A202C]">Share when you're available and volunteer when your ministry needs help.</p>
         </div>
 
-        <div className="flex w-full flex-col items-center gap-4">
-          <Button onClick={onStart}>Get Started</Button>
+        <div className="flex w-full flex-col items-center gap-3">
+          <Button onClick={onSignIn} variant="primary">Sign In</Button>
+          <Button onClick={onStart} variant="secondary">Create Account / Join</Button>
           <Button onClick={onAdmin} variant="ghost">Sign in as Admin</Button>
         </div>
       </div>

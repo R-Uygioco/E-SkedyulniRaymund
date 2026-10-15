@@ -3,12 +3,17 @@ import { WIZARD_BACK_TARGETS, type WizardScreen } from "./features/wizard/naviga
 import { AVAILABILITY_BACK_TARGETS, type AvailabilityScreen } from "./features/availability/navigation"
 import { SLOTS_BACK_TARGETS, type SlotsScreen } from "./features/slots/navigation"
 
+export type AuthScreen = "sign-in" | "sign-up" | "forgot-password"
+
 // Every screen in the app. Each feature lists its own screens in its navigation.ts.
-export type Screen = WizardScreen | "home" | "admin-login" | "admin" | AvailabilityScreen | SlotsScreen
+export type Screen = WizardScreen | AuthScreen | "home" | "admin-login" | "admin" | AvailabilityScreen | SlotsScreen
 
 // Where the Android back button goes from each screen.
 export const BACK_TARGETS: Record<Screen, BackTarget<Screen>> = {
   ...WIZARD_BACK_TARGETS,
+  "sign-in": "welcome",
+  "sign-up": "sign-in",
+  "forgot-password": "sign-in",
   home: "minimize",
   "admin-login": "welcome",
   admin: "admin-login",
