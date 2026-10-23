@@ -131,11 +131,10 @@ function EmptyState({ title, detail, action }: { title: string; detail: string; 
   )
 }
 
-function Dashboard({ admin, onEvents, onCreateEvent, onJoinMinistry, availabilityContent, openSlotsContent }: {
+function Dashboard({ admin, onEvents, onCreateEvent, availabilityContent, openSlotsContent }: {
   admin: ReturnType<typeof useAdmin>
   onEvents: () => void
   onCreateEvent: () => void
-  onJoinMinistry: () => void
   availabilityContent: React.ReactNode
   openSlotsContent: React.ReactNode
 }) {
@@ -150,12 +149,7 @@ function Dashboard({ admin, onEvents, onCreateEvent, onJoinMinistry, availabilit
       <AdminHeader
         title="Admin overview"
         description="Manage organizations and events from one clear workspace."
-        action={
-          <div className="flex flex-wrap gap-2">
-            <Button fullWidth={false} size="compact" variant="secondary" onClick={onJoinMinistry}>Join Another Ministry</Button>
-            <Button fullWidth={false} size="compact" onClick={onCreateEvent}>Create event</Button>
-          </div>
-        }
+        action={<Button fullWidth={false} size="compact" onClick={onCreateEvent}>Create event</Button>}
       />
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <MetricCard label="Active organizations" value={admin.metrics.activeOrganizations} detail="Ready to publish events" />
@@ -683,9 +677,8 @@ function EventForm({ initial, organizationId, admin, onCancel, onSaved }: {
   )
 }
 
-export function AdminScreen({ onLogout, onJoinMinistry, availabilityContent, openSlotsContent }: {
+export function AdminScreen({ onLogout, availabilityContent, openSlotsContent }: {
   onLogout: () => void
-  onJoinMinistry: () => void
   availabilityContent: React.ReactNode
   openSlotsContent: React.ReactNode
 }) {
@@ -754,7 +747,6 @@ export function AdminScreen({ onLogout, onJoinMinistry, availabilityContent, ope
         admin={admin}
         onEvents={() => openSection("events")}
         onCreateEvent={() => setView({ name: "event-form" })}
-        onJoinMinistry={onJoinMinistry}
         availabilityContent={availabilityContent}
         openSlotsContent={openSlotsContent}
       />

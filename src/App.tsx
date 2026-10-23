@@ -287,10 +287,6 @@ function AppContent() {
             returnToAdmin.current = false
             go("welcome")
           }}
-          onJoinMinistry={() => {
-            returnToAdmin.current = true
-            go("join-group")
-          }}
           availabilityContent={renderAvailability(true)}
           openSlotsContent={renderOpenSlots(true)}
         />
