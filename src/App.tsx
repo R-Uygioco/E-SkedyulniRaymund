@@ -47,6 +47,7 @@ function AppContent() {
   const [screen, setScreen] = useState<Screen>("welcome")
   const [prevScreen, setPrevScreen] = useState<Screen>("welcome")
   const [adminAuthenticated, setAdminAuthenticated] = useState(false)
+  const returnToAdmin = useRef(false)
 
   const [homeTab, setHomeTab] = useState<HomeTab>("availability")
   const [ministry, setMinistry] = useState(MINISTRIES[0])
@@ -59,6 +60,10 @@ function AppContent() {
   function go(to: Screen) {
     setPrevScreen(screen)
     setScreen(to)
+  }
+
+  function memberReturnScreen(): Screen {
+    return returnToAdmin.current ? "admin" : "home"
   }
 
   function reset() {
@@ -227,8 +232,11 @@ function AppContent() {
           onLogout={() => {
             auth.signOut()
             setAdminAuthenticated(false)
+            returnToAdmin.current = false
             go("welcome")
           }}
+          availabilityContent={renderAvailability(true)}
+          openSlotsContent={renderOpenSlots(true)}
         />
       ) : (
         <AdminLoginScreen
@@ -417,7 +425,8 @@ function AppContent() {
 
     // ─── Open Slots ───────────────────────────────────────────────────────────
     case "slot-volunteer":
-      return slots.activeSlot ? (
+      if (!slots.activeSlot) { go(memberReturnScreen()); return null }
+      return (
         <SlotVolunteerScreen
           slot={slots.activeSlot}
           onVolunteer={() => {
@@ -426,10 +435,11 @@ function AppContent() {
           }}
           onBack={() => go("home")}
         />
-      ) : null
+      )
 
     case "slot-serving":
-      return slots.activeSlot ? (
+      if (!slots.activeSlot) { go(memberReturnScreen()); return null }
+      return (
         <SlotServingScreen
           slot={slots.activeSlot}
           onCancelSpot={() => {
@@ -438,10 +448,10 @@ function AppContent() {
           }}
           onBack={() => go("home")}
         />
-      ) : null
+      )
 
     case "slot-filled":
-      return <SlotFilledScreen onSeeOthers={() => go("home")} />
+      return <SlotFilledScreen onSeeOthers={() => go(memberReturnScreen())} />
   }
 }
 

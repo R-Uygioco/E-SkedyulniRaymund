@@ -7,7 +7,7 @@ export const INITIAL_FORM: FormData = {
 }
 
 export const EXAMPLE_GROUPS: Record<string, string> = {
-  "LECT-2024": "Lectors Ministry",
+  "LECT-2024": "Lectors",
   "ALTAR-01": "Altar Servers",
   "CHOIR-A": "Parish Choir",
   "YOUTH-GRP": "Youth Ministry",

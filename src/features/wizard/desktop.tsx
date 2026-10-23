@@ -79,7 +79,7 @@ export function DesktopJoinGroupScreen({ data, setData, onJoin, onBack }: {
   const [pasteLink, setPasteLink] = useState("")
 
   function handleJoin() {
-    const code = pasteMode ? (pasteLink.split("/").pop() || "").toUpperCase().trim() : data.groupCode.trim().toUpperCase()
+    const code = pasteMode ? (pasteLink.split("/").filter(Boolean).pop() || "").toUpperCase().trim() : data.groupCode.trim().toUpperCase()
     if (!code) { setError("Please enter a group code to continue."); return }
     const groupName = EXAMPLE_GROUPS[code]
     if (!groupName) { setError("We couldn't find a group with that code. Please check with your group leader and try again."); return }

@@ -48,7 +48,7 @@ function toMinutes(time: string) {
 
 function formatClock(time: string) {
   const [hour, minute] = time.split(":").map(Number)
-  return `${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${hour >= 12 ? "PM" : "AM"}`
+  return `${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${hour >= 12 && hour < 24 ? "PM" : "AM"}`
 }
 
 /** "7:45–8:45 AM" when both times share AM/PM, otherwise "11:00 AM–12:00 PM". */

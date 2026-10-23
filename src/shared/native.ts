@@ -15,7 +15,8 @@ export type BackTarget<S extends string> = S | 'exit' | 'minimize' | 'previous'
 export function applyStatusBar(screen: string) {
   document.body.dataset.screen = screen
   if (!isNativeApp) return
-  const style = screen === 'home' ? SystemBarsStyle.Dark : SystemBarsStyle.Light
+  const navyScreens = ['home', 'set-recurring', 'add-override', 'admin']
+  const style = navyScreens.includes(screen) ? SystemBarsStyle.Dark : SystemBarsStyle.Light
   SystemBars.setStyle({ style, bar: SystemBarType.StatusBar }).catch(() => {})
 }
 

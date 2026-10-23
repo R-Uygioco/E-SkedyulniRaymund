@@ -140,7 +140,7 @@ function TimePicker({ label, value, onChange }: { label: string; value: string; 
         </button>
       </div>
       {open && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end" data-closing={closing}>
+        <div className="fixed inset-0 z-50 flex flex-col justify-end" data-closing={closing} role="dialog" aria-modal="true">
           <div className="sheet-backdrop absolute inset-0 bg-black/50" onClick={() => close(() => setOpen(false))} aria-hidden="true" />
           <div className="sheet-panel relative bg-white rounded-t-3xl px-5 pt-4 pb-8 shadow-2xl">
             <div className="w-10 h-1.5 bg-[#D1D9E8] rounded-full mx-auto mb-4" />
@@ -226,7 +226,7 @@ function ConfirmRemoveModal({ onConfirm, onCancel }: {
 }) {
   const { closing, close } = useSheetClose()
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" data-closing={closing}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center" data-closing={closing} role="dialog" aria-modal="true">
       <div className="sheet-backdrop absolute inset-0 bg-black/50" onClick={() => close(onCancel)} aria-hidden="true" />
       <div className="sheet-panel relative bg-white rounded-t-3xl px-6 pt-6 pb-10 w-full max-w-lg shadow-2xl">
         <div className="w-10 h-1.5 bg-[#D1D9E8] rounded-full mx-auto mb-5" />
@@ -277,7 +277,7 @@ function OverrideEntryCard({ entry, onEdit, onRemove }: {
             </span>
           </div>
           <p className="text-[#1A202C] text-[17px] font-semibold">{formatDate(entry.date)}</p>
-          {isFree && entry.startTime && <p className="text-[#64748B] text-[15px] mt-0.5">{formatTime(entry.startTime)} – {formatTime(entry.endTime!)}</p>}
+          {isFree && entry.startTime && entry.endTime && <p className="text-[#64748B] text-[15px] mt-0.5">{formatTime(entry.startTime)} – {formatTime(entry.endTime)}</p>}
         </div>
       </div>
       <div className="flex gap-2 pt-3 border-t border-black/5">
@@ -592,7 +592,8 @@ export function SetRecurringScreen({ initial, onSave, onBack }: {
 export function AddOverrideScreen({ initial, onSave, onBack }: {
   initial?: OneTimeOverride; onSave: (e: OneTimeOverride) => void; onBack: () => void
 }) {
-  const today = new Date().toISOString().split("T")[0]
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
   const [date, setDate] = useState(initial?.date ?? today)
   const [type, setType] = useState<"free" | "blocked" | null>(initial?.type ?? null)
   const [startTime, setStartTime] = useState(initial?.startTime ?? "13:00")

@@ -127,6 +127,17 @@ export function HomeScreen({
               <p className="text-xl font-extrabold">{ministry.name} ▾</p>
             </div>
           </button>
+
+          <div className="mt-4 flex justify-end">
+            <button
+              type="button"
+              onClick={() => onTabChange("availability")}
+              className="flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-[#C9921A] px-4 text-[15px] font-bold text-white shadow-sm transition-colors hover:bg-[#b88210] cursor-pointer"
+            >
+              <span aria-hidden="true" className="text-lg leading-none">+</span>
+              Add availability
+            </button>
+          </div>
         </div>
       </div>
 

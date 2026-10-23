@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react"
 import { Button, InputField } from "../../shared/ui"
+import { UserProfileSheet } from "../auth/UserProfileSheet"
+import { useAuth } from "../auth/useAuth"
 import { useAdmin } from "./useAdmin"
 import type {
   AdminEvent,
@@ -48,13 +50,15 @@ function emptyEvent(organizationId: string): EventDraft {
 
 function formatDateTime(value: string) {
   if (!value) return "Not set"
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return "Invalid date"
   return new Intl.DateTimeFormat("en-PH", {
     month: "short",
     day: "numeric",
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  }).format(new Date(value))
+  }).format(d)
 }
 
 function StatusBadge({ status }: { status: OrganizationStatus | EventStatus }) {
@@ -127,12 +131,14 @@ function EmptyState({ title, detail, action }: { title: string; detail: string; 
   )
 }
 
-function Dashboard({ admin, onOrganizations, onEvents, onCreateEvent }: {
+function Dashboard({ admin, onEvents, onCreateEvent, availabilityContent, openSlotsContent }: {
   admin: ReturnType<typeof useAdmin>
-  onOrganizations: () => void
   onEvents: () => void
   onCreateEvent: () => void
+  availabilityContent: React.ReactNode
+  openSlotsContent: React.ReactNode
 }) {
+  const [memberTab, setMemberTab] = useState<"availability" | "open-slots">("availability")
   const nextEvents = admin.events
     .filter(event => event.status === "published")
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
@@ -151,8 +157,7 @@ function Dashboard({ admin, onOrganizations, onEvents, onCreateEvent }: {
         <MetricCard label="Upcoming" value={admin.metrics.upcomingEvents} detail="Scheduled ahead" />
         <MetricCard label="Drafts" value={admin.metrics.draftEvents} detail="Waiting for review" />
       </div>
-      <div className="grid gap-6 xl:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-white p-5 shadow-sm xl:col-span-2">
+      <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <p className="text-xl font-bold text-text">Upcoming events</p>
@@ -161,30 +166,56 @@ function Dashboard({ admin, onOrganizations, onEvents, onCreateEvent }: {
             <Button variant="ghost" size="compact" fullWidth={false} onClick={onEvents} className="shrink-0 whitespace-nowrap">View all</Button>
           </div>
           <div className="divide-y divide-border">
-            {nextEvents.map(event => {
-              const organization = admin.organizations.find(item => item.id === event.organizationId)
-              return (
-                <div key={event.id} className="flex items-center justify-between gap-4 py-4">
-                  <div className="min-w-0">
-                    <p className="truncate font-bold text-text">{event.title}</p>
-                    <p className="mt-1 text-sm text-muted">{organization?.name} · {formatDateTime(event.startsAt)}</p>
+            {nextEvents.length ? (
+              nextEvents.map(event => {
+                const organization = admin.organizations.find(item => item.id === event.organizationId)
+                return (
+                  <div key={event.id} className="flex items-center justify-between gap-4 py-4">
+                    <div className="min-w-0">
+                      <p className="truncate font-bold text-text">{event.title}</p>
+                      <p className="mt-1 text-sm text-muted">{organization?.name} · {formatDateTime(event.startsAt)}</p>
+                    </div>
+                    <StatusBadge status={event.status} />
                   </div>
-                  <StatusBadge status={event.status} />
-                </div>
-              )
-            })}
+                )
+              })
+            ) : (
+              <p className="py-4 text-sm text-muted">No published upcoming events.</p>
+            )}
           </div>
-        </div>
-        <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
-          <p className="text-xl font-bold text-text">Quick actions</p>
-          <p className="mt-1 text-sm text-muted">Go directly to common admin tasks.</p>
-          <div className="mt-5 flex flex-col gap-3">
-            <Button variant="secondary" onClick={onOrganizations}>Manage organizations</Button>
-            <Button variant="secondary" onClick={onEvents}>Review event calendar</Button>
-            <Button onClick={onCreateEvent}>Create a new event</Button>
-          </div>
-        </div>
       </div>
+      <section className="space-y-5">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-gold">Member tools</p>
+            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-navy">My ministry</h2>
+            <p className="mt-2 text-base leading-relaxed text-muted">Manage your availability and volunteer for open slots.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-1 rounded-3xl border border-white/70 bg-white/80 p-1.5 shadow-sm">
+            {([
+              ["availability", "Availability"],
+              ["open-slots", "Open Slots"],
+            ] as const).map(([tab, label]) => (
+              <Button
+                key={tab}
+                variant="ghost"
+                size="compact"
+                fullWidth
+                onClick={() => setMemberTab(tab)}
+                ariaPressed={memberTab === tab}
+                className={`min-h-11 rounded-2xl px-3 text-sm ${
+                  memberTab === tab
+                    ? "bg-navy/10 text-navy shadow-sm ring-1 ring-navy/15"
+                    : "text-muted hover:bg-bg hover:text-navy"
+                }`}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        </div>
+        {memberTab === "availability" ? availabilityContent : openSlotsContent}
+      </section>
     </div>
   )
 }
@@ -309,7 +340,7 @@ function OrganizationDetails({ organization, admin, onBack, onEdit, onCreateEven
       <Button variant="ghost" size="compact" fullWidth={false} onClick={onBack}>Back to organizations</Button>
       <AdminHeader
         title={organization.name}
-        description={`${organization.category} · Created ${new Intl.DateTimeFormat("en-PH", { dateStyle: "medium" }).format(new Date(organization.createdAt))}`}
+        description={`${organization.category} · Created ${(() => { const d = new Date(organization.createdAt); return isNaN(d.getTime()) ? "Unknown" : new Intl.DateTimeFormat("en-PH", { dateStyle: "medium" }).format(d) })()}`}
         action={<StatusBadge status={organization.status} />}
       />
       <div className="grid gap-6 lg:grid-cols-3">
@@ -601,7 +632,7 @@ function EventForm({ initial, organizationId, admin, onCancel, onSaved }: {
           <InputField id="event-start" type="datetime-local" label="Starts" value={form.startsAt} onChange={value => update("startsAt", value)} />
           <InputField id="event-end" type="datetime-local" label="Ends" value={form.endsAt} onChange={value => update("endsAt", value)} />
           <InputField id="event-location" label="Location" value={form.location} onChange={value => update("location", value)} placeholder="Venue or meeting link" />
-          <InputField id="event-capacity" type="number" label="Maximum attendees" value={String(form.capacity)} onChange={value => update("capacity", Number(value))} />
+          <InputField id="event-capacity" type="number" label="Maximum attendees" value={String(form.capacity || "")} onChange={value => update("capacity", value === "" ? 0 : Number(value))} />
           <InputField id="registration-deadline" type="datetime-local" label="Registration deadline" value={form.registrationDeadline} onChange={value => update("registrationDeadline", value)} helper="Optional. Must be before the event starts." />
           <div>
             <p className="mb-2 text-sm font-semibold text-text">Visibility</p>
@@ -646,9 +677,17 @@ function EventForm({ initial, organizationId, admin, onCancel, onSaved }: {
   )
 }
 
-export function AdminScreen({ onLogout }: { onLogout: () => void }) {
+export function AdminScreen({ onLogout, availabilityContent, openSlotsContent }: {
+  onLogout: () => void
+  availabilityContent: React.ReactNode
+  openSlotsContent: React.ReactNode
+}) {
   const admin = useAdmin()
+  const auth = useAuth()
   const [view, setView] = useState<AdminView>({ name: "section", section: "dashboard" })
+  const [showProfile, setShowProfile] = useState(false)
+  const adminName = auth.profile?.fullName || auth.user?.user_metadata?.full_name || "Administrator"
+  const adminInitial = adminName.trim().charAt(0).toUpperCase() || "A"
 
   const activeSection: AdminSection =
     view.name === "section"
@@ -685,7 +724,12 @@ export function AdminScreen({ onLogout }: { onLogout: () => void }) {
         onEdit={() => setView({ name: "organization-form", id: organization.id })}
         onCreateEvent={() => setView({ name: "event-form", organizationId: organization.id })}
       />
-    ) : null
+    ) : (
+      <div className="space-y-6">
+        <Button variant="ghost" size="compact" fullWidth={false} onClick={() => openSection("organizations")}>Back to organizations</Button>
+        <EmptyState title="Organization not found" detail="This organization may have been deleted or is no longer available." />
+      </div>
+    )
   } else if (view.name === "event-form") {
     const initial = view.id ? admin.events.find(event => event.id === view.id) : undefined
     content = (
@@ -701,9 +745,10 @@ export function AdminScreen({ onLogout }: { onLogout: () => void }) {
     content = (
       <Dashboard
         admin={admin}
-        onOrganizations={() => openSection("organizations")}
         onEvents={() => openSection("events")}
         onCreateEvent={() => setView({ name: "event-form" })}
+        availabilityContent={availabilityContent}
+        openSlotsContent={openSlotsContent}
       />
     )
   } else if (view.section === "organizations") {
@@ -727,9 +772,19 @@ export function AdminScreen({ onLogout }: { onLogout: () => void }) {
   return (
     <div className="min-h-screen bg-bg text-text">
       <div className="sticky top-0 z-40 border-b border-white/10 bg-navy text-white shadow-sm lg:hidden">
-        <div className="flex items-center justify-between px-4 py-4">
+        <div className="flex items-center justify-between gap-2 px-4 py-4">
           <AdminBrand compact />
-          <Button variant="ghost" size="compact" fullWidth={false} onClick={onLogout} className="text-white hover:bg-white/10">Sign out</Button>
+          <button
+            type="button"
+            onClick={() => setShowProfile(true)}
+            className="flex min-h-12 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 transition-colors hover:bg-white/20 cursor-pointer"
+            aria-label="Account Profile and Settings"
+          >
+            <span className="flex size-8 items-center justify-center rounded-full bg-gold text-xs font-extrabold text-white">
+              {adminInitial}
+            </span>
+            <span className="text-xs font-semibold text-white/90">Profile</span>
+          </button>
         </div>
       </div>
       <div className="mx-auto flex min-h-screen max-w-screen-2xl">
@@ -750,9 +805,16 @@ export function AdminScreen({ onLogout }: { onLogout: () => void }) {
             ))}
           </div>
           <div className="border-t border-white/15 pt-4">
-            <p className="px-3 text-sm font-semibold">Raymund Uygioco</p>
+            <p className="px-3 text-sm font-semibold">{adminName}</p>
             <p className="px-3 text-xs text-white/60">Administrator</p>
-            <Button variant="ghost" size="compact" onClick={onLogout} className="mt-3 justify-start text-white hover:bg-white/10">Sign out</Button>
+            <Button
+              variant="ghost"
+              size="compact"
+              onClick={() => setShowProfile(true)}
+              className="mt-3 justify-start text-white hover:bg-white/10"
+            >
+              Profile &amp; settings
+            </Button>
           </div>
         </aside>
         <main className="min-w-0 flex-1 px-4 pb-28 pt-6 sm:px-7 lg:px-10 lg:py-9">
@@ -778,6 +840,12 @@ export function AdminScreen({ onLogout }: { onLogout: () => void }) {
           </Button>
         ))}
       </nav>
+      {showProfile && (
+        <UserProfileSheet
+          onClose={() => setShowProfile(false)}
+          onSignOut={onLogout}
+        />
+      )}
     </div>
   )
 }

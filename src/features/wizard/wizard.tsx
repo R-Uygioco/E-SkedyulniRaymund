@@ -97,7 +97,7 @@ export function JoinGroupScreen({
 
   function handleJoin() {
     const code = pasteMode
-      ? (pasteLink.split("/").pop() || "").toUpperCase().trim()
+      ? (pasteLink.split("/").filter(Boolean).pop() || "").toUpperCase().trim()
       : data.groupCode.trim().toUpperCase()
     if (!code) { setError("Please enter a group code to continue."); return }
     const groupName = EXAMPLE_GROUPS[code]

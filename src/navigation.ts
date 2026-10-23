@@ -16,7 +16,7 @@ export const BACK_TARGETS: Record<Screen, BackTarget<Screen>> = {
   "forgot-password": "sign-in",
   home: "minimize",
   "admin-login": "welcome",
-  admin: "admin-login",
+  admin: "home",
   ...AVAILABILITY_BACK_TARGETS,
   ...SLOTS_BACK_TARGETS,
 }

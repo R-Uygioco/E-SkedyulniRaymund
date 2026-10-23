@@ -19,6 +19,7 @@ export interface Slot {
 export function slotTimeTo24h(time: string): string {
   const [clock, period] = time.split(" ")
   const [hour, minute] = clock.split(":").map(Number)
+  if (!period) return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
   let h = hour % 12
   if (period === "PM") h += 12
   return `${String(h).padStart(2, "0")}:${String(minute).padStart(2, "0")}`

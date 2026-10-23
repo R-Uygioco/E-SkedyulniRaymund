@@ -27,6 +27,7 @@ export function useSlots() {
     cancelSpot() {
       if (!activeSlot) return
       setSlots(prev => prev.map(s => s.id === activeSlot.id ? { ...s, status: "open", filledSpots: Math.max(0, s.filledSpots - 1) } : s))
+      setActiveSlot(prev => prev ? { ...prev, status: "open", filledSpots: Math.max(0, prev.filledSpots - 1) } : prev)
     },
   }
 }
