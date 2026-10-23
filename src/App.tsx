@@ -71,60 +71,8 @@ function AppContent() {
     setHomeTab("availability")
     setMinistry(MINISTRIES[0])
     availability.resetPosition()
-    returnToAdmin.current = false
     setAdminAuthenticated(false)
     go("welcome")
-  }
-
-  function renderAvailability(isAdmin: boolean) {
-    return (
-      <AvailabilityTab
-        recurringEntries={availability.recurringEntries}
-        overrides={availability.overrides}
-        slots={slots.slots}
-        onViewSlot={(slot) => {
-          returnToAdmin.current = isAdmin
-          slots.setActiveSlot(slot)
-          go("slot-serving")
-        }}
-        position={availability.timetablePosition}
-        onPositionChange={availability.changePosition}
-        onAddRecurring={() => {
-          returnToAdmin.current = isAdmin
-          availability.startRecurring()
-          go("set-recurring")
-        }}
-        onAddOverride={() => {
-          returnToAdmin.current = isAdmin
-          availability.startOverride()
-          go("add-override")
-        }}
-        onEditRecurring={(entry) => {
-          returnToAdmin.current = isAdmin
-          availability.startRecurring(entry)
-          go("set-recurring")
-        }}
-        onEditOverride={(entry) => {
-          returnToAdmin.current = isAdmin
-          availability.startOverride(entry)
-          go("add-override")
-        }}
-        onRemoveRecurring={availability.removeRecurring}
-        onRemoveOverride={availability.removeOverride}
-      />
-    )
-  }
-
-  function renderOpenSlots(isAdmin: boolean) {
-    return (
-      <SlotList
-        slots={slots.slots}
-        onSlotTap={(slot) => {
-          returnToAdmin.current = isAdmin
-          go(slots.openSlot(slot))
-        }}
-      />
-    )
   }
 
   // Keep active ministry in sync with Supabase profile
@@ -305,11 +253,11 @@ function AppContent() {
       return (
         <TellNameScreen
           firstName={
-            wizard.firstName || auth.profile?.fullName?.split(" ")[0] || ""
+            wizard.firstName || auth.profile?.fullName.split(" ")[0] || ""
           }
           lastName={
             wizard.lastName ||
-            auth.profile?.fullName?.split(" ").slice(1).join(" ") ||
+            auth.profile?.fullName.split(" ").slice(1).join(" ") ||
             ""
           }
           setFirstName={wizard.setFirstName}
@@ -317,10 +265,10 @@ function AppContent() {
           onBack={() => go("welcome")}
           onContinue={() => {
             const first =
-              wizard.firstName || auth.profile?.fullName?.split(" ")[0] || ""
+              wizard.firstName || auth.profile?.fullName.split(" ")[0] || ""
             const last =
               wizard.lastName ||
-              auth.profile?.fullName?.split(" ").slice(1).join(" ") ||
+              auth.profile?.fullName.split(" ").slice(1).join(" ") ||
               ""
             const fullName = `${first} ${last}`.trim()
             wizard.updateForm({ name: fullName })
@@ -382,13 +330,13 @@ function AppContent() {
         <DesktopPendingScreen
           data={wizard.form}
           onBack={() => go("join-group")}
-          onApproved={() => go(memberReturnScreen())}
+          onApproved={() => go("home")}
         />
       ) : (
         <PendingScreen
           data={wizard.form}
           onBack={() => go("join-group")}
-          onApproved={() => go(memberReturnScreen())}
+          onApproved={() => go("home")}
         />
       )
 
@@ -401,10 +349,7 @@ function AppContent() {
           onMinistryChange={setMinistry}
           tab={homeTab}
           onTabChange={setHomeTab}
-          onJoin={() => {
-            returnToAdmin.current = false
-            go("join-group")
-          }}
+          onJoin={() => go("join-group")}
           onSignOut={() => {
             auth.signOut()
             reset()
@@ -414,7 +359,42 @@ function AppContent() {
             go("admin")
           }}
         >
-          {homeTab === "availability" ? renderAvailability(false) : renderOpenSlots(false)}
+          {homeTab === "availability" ? (
+            <AvailabilityTab
+              recurringEntries={availability.recurringEntries}
+              overrides={availability.overrides}
+              slots={slots.slots}
+              onViewSlot={(slot) => {
+                slots.setActiveSlot(slot)
+                go("slot-serving")
+              }}
+              position={availability.timetablePosition}
+              onPositionChange={availability.changePosition}
+              onAddRecurring={() => {
+                availability.startRecurring()
+                go("set-recurring")
+              }}
+              onAddOverride={() => {
+                availability.startOverride()
+                go("add-override")
+              }}
+              onEditRecurring={(e) => {
+                availability.startRecurring(e)
+                go("set-recurring")
+              }}
+              onEditOverride={(e) => {
+                availability.startOverride(e)
+                go("add-override")
+              }}
+              onRemoveRecurring={availability.removeRecurring}
+              onRemoveOverride={availability.removeOverride}
+            />
+          ) : (
+            <SlotList
+              slots={slots.slots}
+              onSlotTap={(slot) => go(slots.openSlot(slot))}
+            />
+          )}
         </HomeScreen>
       )
 
@@ -425,9 +405,9 @@ function AppContent() {
           initial={availability.editingRecurring}
           onSave={(entry) => {
             availability.saveRecurring(entry)
-            go(memberReturnScreen())
+            go("home")
           }}
-          onBack={() => go(memberReturnScreen())}
+          onBack={() => go("home")}
         />
       )
 
@@ -437,9 +417,9 @@ function AppContent() {
           initial={availability.editingOverride}
           onSave={(entry) => {
             availability.saveOverride(entry)
-            go(memberReturnScreen())
+            go("home")
           }}
-          onBack={() => go(memberReturnScreen())}
+          onBack={() => go("home")}
         />
       )
 
@@ -453,7 +433,7 @@ function AppContent() {
             slots.volunteer()
             go("slot-serving")
           }}
-          onBack={() => go(memberReturnScreen())}
+          onBack={() => go("home")}
         />
       )
 
@@ -464,9 +444,9 @@ function AppContent() {
           slot={slots.activeSlot}
           onCancelSpot={() => {
             slots.cancelSpot()
-            go(memberReturnScreen())
+            go("home")
           }}
-          onBack={() => go(memberReturnScreen())}
+          onBack={() => go("home")}
         />
       )
 

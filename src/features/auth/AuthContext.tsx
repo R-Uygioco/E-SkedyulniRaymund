@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const isUserAdmin = p.role === "admin" || (data.user.user_metadata?.role as string) === "admin"
         return { ok: true, isAdmin: isUserAdmin }
       }
-      return { ok: false, error: "Authentication failed. Please check your credentials and try again." }
+      return { ok: true, isAdmin: false }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "An unexpected error occurred during sign in."
       return { ok: false, error: msg }

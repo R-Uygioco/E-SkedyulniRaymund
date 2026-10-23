@@ -19,7 +19,7 @@ export function UserProfileSheet({
   const role = profile?.role || (isAdmin ? "admin" : "member")
   const initials = displayName
     .split(" ")
-    .map((p: string) => p[0])
+    .map((p) => p[0])
     .join("")
     .slice(0, 2)
     .toUpperCase()
@@ -116,7 +116,8 @@ export function UserProfileSheet({
             <Button
               variant="secondary"
               onClick={() => {
-                close(() => { onClose(); onOpenAdmin?.() })
+                close(onClose)
+                onOpenAdmin()
               }}
             >
               Go to Admin Portal
