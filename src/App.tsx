@@ -75,6 +75,57 @@ function AppContent() {
     go("welcome")
   }
 
+  function renderAvailability(isAdmin: boolean) {
+    return (
+      <AvailabilityTab
+        recurringEntries={availability.recurringEntries}
+        overrides={availability.overrides}
+        slots={slots.slots}
+        onViewSlot={(slot) => {
+          returnToAdmin.current = isAdmin
+          slots.setActiveSlot(slot)
+          go("slot-serving")
+        }}
+        position={availability.timetablePosition}
+        onPositionChange={availability.changePosition}
+        onAddRecurring={() => {
+          returnToAdmin.current = isAdmin
+          availability.startRecurring()
+          go("set-recurring")
+        }}
+        onAddOverride={() => {
+          returnToAdmin.current = isAdmin
+          availability.startOverride()
+          go("add-override")
+        }}
+        onEditRecurring={(entry) => {
+          returnToAdmin.current = isAdmin
+          availability.startRecurring(entry)
+          go("set-recurring")
+        }}
+        onEditOverride={(entry) => {
+          returnToAdmin.current = isAdmin
+          availability.startOverride(entry)
+          go("add-override")
+        }}
+        onRemoveRecurring={availability.removeRecurring}
+        onRemoveOverride={availability.removeOverride}
+      />
+    )
+  }
+
+  function renderOpenSlots(isAdmin: boolean) {
+    return (
+      <SlotList
+        slots={slots.slots}
+        onSlotTap={(slot) => {
+          returnToAdmin.current = isAdmin
+          go(slots.openSlot(slot))
+        }}
+      />
+    )
+  }
+
   // Keep active ministry in sync with Supabase profile
   useEffect(() => {
     if (auth.profile?.ministry) {
@@ -405,9 +456,9 @@ function AppContent() {
           initial={availability.editingRecurring}
           onSave={(entry) => {
             availability.saveRecurring(entry)
-            go("home")
+            go(memberReturnScreen())
           }}
-          onBack={() => go("home")}
+          onBack={() => go(memberReturnScreen())}
         />
       )
 
@@ -417,9 +468,9 @@ function AppContent() {
           initial={availability.editingOverride}
           onSave={(entry) => {
             availability.saveOverride(entry)
-            go("home")
+            go(memberReturnScreen())
           }}
-          onBack={() => go("home")}
+          onBack={() => go(memberReturnScreen())}
         />
       )
 
@@ -433,7 +484,7 @@ function AppContent() {
             slots.volunteer()
             go("slot-serving")
           }}
-          onBack={() => go("home")}
+          onBack={() => go(memberReturnScreen())}
         />
       )
 
@@ -444,9 +495,9 @@ function AppContent() {
           slot={slots.activeSlot}
           onCancelSpot={() => {
             slots.cancelSpot()
-            go("home")
+            go(memberReturnScreen())
           }}
-          onBack={() => go("home")}
+          onBack={() => go(memberReturnScreen())}
         />
       )
 
