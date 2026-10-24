@@ -1,28 +1,53 @@
-import { useState } from "react"
+import { useState, type FormEvent } from "react"
+
 import { BackButton, Button, Card, InputField, Logo, ScreenShell } from "../../shared/ui"
+import { apiRequest, getApiErrorMessage, setAdminToken, type AdminLoginResponse } from "../../lib/api"
 
-const ADMIN_USERNAME = "admin"
-const ADMIN_PASSWORD = "admin123"
-
-export function AdminLoginScreen({ onBack, onAuthenticated }: {
+export function AdminLoginScreen({
+  onBack,
+  onAuthenticated,
+}: {
   onBack: () => void
   onAuthenticated: () => void
 }) {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  function signIn() {
+  async function signIn() {
     if (!username.trim() || !password) {
       setError("Enter your username and password.")
       return
     }
-    if (username.trim() !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
-      setError("The username or password is incorrect.")
-      return
-    }
+
+    setLoading(true)
     setError("")
-    onAuthenticated()
+
+    try {
+      const result = await apiRequest<AdminLoginResponse>(
+        "/admin/auth/login",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            username: username.trim(),
+            password,
+          }),
+        },
+        false,
+      )
+
+      if (!result.access_token || result.user?.role !== "admin") {
+        throw new Error("The backend did not return a valid administrator session.")
+      }
+
+      setAdminToken(result.access_token)
+      onAuthenticated()
+    } catch (err) {
+      setError(getApiErrorMessage(err))
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -39,7 +64,13 @@ export function AdminLoginScreen({ onBack, onAuthenticated }: {
             Sign in with your administrator account to manage organizations and events.
           </p>
         </div>
-        <div className="mt-6 flex flex-col gap-5">
+        <form
+          className="mt-6 flex flex-col gap-5"
+          onSubmit={(event: FormEvent<HTMLFormElement>) => {
+            event.preventDefault()
+            void signIn()
+          }}
+        >
           <InputField
             id="admin-username"
             label="Username"
@@ -68,8 +99,10 @@ export function AdminLoginScreen({ onBack, onAuthenticated }: {
               {error}
             </p>
           )}
-          <Button onClick={signIn}>Sign in to admin</Button>
-        </div>
+          <Button type="submit" disabled={loading}>
+            {loading ? "Signing in..." : "Sign in to admin"}
+          </Button>
+        </form>
       </Card>
       <p className="mt-5 text-center text-sm leading-relaxed text-muted">
         This workspace is restricted to authorized administrators.
