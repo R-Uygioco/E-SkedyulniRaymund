@@ -66,13 +66,14 @@ function greeting() {
   return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"
 }
 
-export function HomeScreen({ userName, ministry, onMinistryChange, tab, onTabChange, onJoin, children, embedded = false }: {
+export function HomeScreen({ userName, ministry, onMinistryChange, tab, onTabChange, onJoin, onLogout, children, embedded = false }: {
   userName: string
   ministry: Ministry
   onMinistryChange: (ministry: Ministry) => void
   tab: HomeTab
   onTabChange: (tab: HomeTab) => void
   onJoin: () => void
+  onLogout: () => void
   children: React.ReactNode // the open tab's content
   embedded?: boolean
 }) {
@@ -90,10 +91,19 @@ export function HomeScreen({ userName, ministry, onMinistryChange, tab, onTabCha
       <div className={embedded ? "mb-5" : "bg-[#1B3A6B] px-4 pb-5 text-white"} style={embedded ? undefined : { paddingTop: "calc(2.5rem + env(safe-area-inset-top))" }}>
         <div className={`mx-auto ${wide ? "max-w-6xl" : "max-w-3xl"}`}>
           {!embedded && (
-          <div className="mb-4">
-            <p className="text-[16px] text-white/70">{greeting()}, {userName.split(" ")[0]}</p>
-            <p className="text-xl font-bold">E-Skedyul</p>
-          </div>
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[16px] text-white/70">{greeting()}, {userName.split(" ")[0]}</p>
+                <p className="text-xl font-bold">E-Skedyul</p>
+              </div>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="rounded-xl border border-white/30 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+              >
+                Log out
+              </button>
+            </div>
           )}
           <button onClick={() => setShowMinistries(true)} className={`flex min-h-[64px] w-full items-center justify-between rounded-2xl px-5 text-left shadow-sm ${embedded ? "border border-border bg-white text-navy" : "bg-white text-[#1B3A6B]"}`}>
             <div>

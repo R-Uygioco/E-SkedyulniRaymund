@@ -78,6 +78,7 @@ export default function App() {
         tab={homeTab}
         onTabChange={setHomeTab}
         onJoin={() => go("join-group")}
+        onLogout={reset}
         embedded={embedded}
       >
         {homeTab === "availability" ? (
@@ -156,7 +157,7 @@ export default function App() {
           setLastName={wizard.setLastName}
           onContinue={() => {
             wizard.saveName()
-            go("join-group")
+            go("home")
           }}
         />
       )
