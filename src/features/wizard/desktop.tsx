@@ -121,14 +121,6 @@ export function DesktopJoinGroupScreen({ data, setData, onJoin, onBack }: {
             <Button onClick={handleJoin} variant="primary">Join This Group</Button>
           </div>
         </Card>
-        <div className="mt-5 bg-[#EFF6FF] border border-[#2563EB]/20 rounded-xl p-4">
-          <p className="text-[#2563EB] font-semibold text-[15px] mb-2">Try these sample codes:</p>
-          <div className="flex flex-wrap gap-2">
-            {Object.keys(EXAMPLE_GROUPS).map(code => (
-              <button key={code} onClick={() => { setData({ groupCode: code }); setPasteMode(false); setError("") }} className="font-mono bg-white text-[#1B3A6B] border border-[#D1D9E8] rounded-lg px-3 py-1.5 text-[14px] font-semibold hover:border-[#1B3A6B] transition-colors cursor-pointer">{code}</button>
-            ))}
-          </div>
-        </div>
       </DesktopFormPanel>
     </div>
   )
