@@ -14,6 +14,13 @@ export type Ministry = {
   parish: string
 
   waiting?: boolean
+
+  /**
+   * True for the selector's "All ministries" entry, which shows every approved
+   * ministry on one schedule. It is a view choice, not a ministry the member
+   * joined.
+   */
+  all?: boolean
 }
 
 function MinistrySheet({
@@ -155,9 +162,13 @@ export function HomeScreen({
 }: {
   userName: string
 
-  /** The ministries the signed-in member belongs to, loaded from the organization tables. */
+  /**
+   * The rows of "My Ministries": the "All ministries" choice when there are
+   * several, then approved memberships, then requests still waiting for review.
+   */
   ministries: Ministry[]
 
+  /** The row currently selected, which sets the scope of the availability week. */
   ministry: Ministry | null
 
   onMinistryChange: (ministry: Ministry) => void
@@ -189,6 +200,15 @@ export function HomeScreen({
   unreadMessages?: number
 }) {
   const [showMinistries, setShowMinistries] = useState(false)
+
+  // The selector's approved ministries; requests still waiting for approval
+  // cannot be selected, so they are not counted. The "All ministries" entry is
+  // a view choice, not a membership.
+  const joined = ministries.filter(item => !item.waiting && !item.all)
+  const ministryPosition =
+    ministry && !ministry.all
+      ? joined.findIndex(item => item.id === ministry.id) + 1
+      : 0
 
   // The Availability tab holds the weekly timetable, so it gets the wide layout.
 
@@ -271,7 +291,14 @@ export function HomeScreen({
           >
             <div>
               <p className="text-[14px] font-semibold text-[#64748B]">
-                Current ministry
+                Current {ministry?.all ? "ministries" : "ministry"}
+                {joined.length > 1
+                  ? ministry?.all
+                    ? ` · ${joined.length}`
+                    : ministryPosition > 0
+                      ? ` · ${ministryPosition} of ${joined.length}`
+                      : ""
+                  : ""}
               </p>
               <p className="text-xl font-extrabold">
                 {ministry ? `${ministry.name} ▾` : "Join a ministry ▾"}
